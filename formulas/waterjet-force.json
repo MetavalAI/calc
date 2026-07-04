@@ -1,0 +1,60 @@
+{
+  "id": "waterjet-force",
+  "name": "Waterjet Force / Thrust Calculator",
+  "tag": "Thrust",
+  "icon": "🚀",
+  "description": "Calculates the thrust (reaction force) produced by a waterjet nozzle using the momentum equation: WJF = V × MFR.",
+  "formula": "WJF = V × MFR",
+  "definitions": [
+    { "symbol": "V",   "label": "Velocity of fluid (m/s)" },
+    { "symbol": "MFR", "label": "Mass Flow Rate (kg/s)" },
+    { "symbol": "WJF", "label": "Water Jet Force / Thrust (N or kg)" }
+  ],
+  "unitSystems": {
+    "SI":       { "density": "kgm3", "diameter": "mm",   "flow": "m3h" },
+    "CGS":      { "density": "gcm3", "diameter": "cm",   "flow": "m3h" },
+    "Imperial": { "density": "lbft3","diameter": "inch",  "flow": "gpm" }
+  },
+  "inputs": [
+    {
+      "id": "density", "label": "Specific Density of Fluid", "default": 1000,
+      "units": [
+        { "value": "kgm3",  "label": "kg/m³",  "toBase": "v => v",           "fromBase": "v => v"           },
+        { "value": "gcm3",  "label": "g/cm³",  "toBase": "v => v * 1000",    "fromBase": "v => v / 1000"    },
+        { "value": "lbft3", "label": "lb/ft³", "toBase": "v => v * 16.0185", "fromBase": "v => v / 16.0185" }
+      ]
+    },
+    {
+      "id": "diameter", "label": "Pipe / Nozzle Diameter", "default": 450,
+      "units": [
+        { "value": "mm",   "label": "mm",   "toBase": "v => v / 1000",    "fromBase": "v => v * 1000"    },
+        { "value": "cm",   "label": "cm",   "toBase": "v => v / 100",     "fromBase": "v => v * 100"     },
+        { "value": "m",    "label": "m",    "toBase": "v => v",           "fromBase": "v => v"           },
+        { "value": "inch", "label": "inch", "toBase": "v => v * 0.0254",  "fromBase": "v => v / 0.0254"  }
+      ]
+    },
+    {
+      "id": "flow", "label": "Flow Rate", "default": 2400,
+      "units": [
+        { "value": "m3h", "label": "m³/hr", "toBase": "v => v / 3600",     "fromBase": "v => v * 3600"     },
+        { "value": "m3s", "label": "m³/s",  "toBase": "v => v",            "fromBase": "v => v"            },
+        { "value": "lpm", "label": "L/min", "toBase": "v => v / 60000",    "fromBase": "v => v * 60000"    },
+        { "value": "gpm", "label": "GPM",   "toBase": "v => v * 6.309e-5", "fromBase": "v => v / 6.309e-5" }
+      ]
+    }
+  ],
+  "calculate": {
+    "steps": [
+      "const rho   = values.density_unit.toBase(values.density);",
+      "const dia_m = values.diameter_unit.toBase(values.diameter);",
+      "const q_m3s = values.flow_unit.toBase(values.flow);",
+      "if (rho <= 0 || dia_m <= 0 || q_m3s <= 0) return { results: [], derived: [] };",
+      "const area   = Math.PI * (dia_m / 2) ** 2;",
+      "const vel    = q_m3s / area;",
+      "const mfr    = rho * q_m3s;",
+      "const wjf_n  = vel * mfr;",
+      "const wjf_kg = wjf_n / 9.80665;",
+      "return { results: [{ label: 'WJF / Thrust', value: wjf_kg.toFixed(2), unit: 'kg' }, { label: 'WJF / Thrust', value: wjf_n.toFixed(2), unit: 'N', highlight: true }], derived: [{ label: 'X-Section Area', value: area.toFixed(4), unit: 'm²' }, { label: 'Flow Rate', value: q_m3s.toFixed(4), unit: 'm³/s' }, { label: 'Velocity (V)', value: vel.toFixed(4), unit: 'm/s' }, { label: 'Mass Flow Rate', value: mfr.toFixed(2), unit: 'kg/s' }] };"
+    ]
+  }
+}

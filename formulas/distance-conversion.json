@@ -1,0 +1,61 @@
+{
+  "id": "distance-conversion",
+  "name": "Distance / Length Converter",
+  "tag": "Unit Conversion",
+  "icon": "📏",
+  "description": "Converts a length / distance value between metric, CGS and imperial units — km, m, cm, mm, miles, yards, feet, inches.",
+  "formula": "L<sub>target</sub> = L<sub>input</sub> × k",
+  "definitions": [
+    { "symbol": "L<sub>input</sub>",  "label": "Input length value" },
+    { "symbol": "k",                   "label": "Conversion factor via base unit (metre)" },
+    { "symbol": "L<sub>target</sub>", "label": "Converted length in chosen output unit" }
+  ],
+  "unitSystems": {
+    "SI":       { "value": "m"    },
+    "CGS":      { "value": "cm"   },
+    "Imperial": { "value": "feet" }
+  },
+  "inputs": [
+    {
+      "id": "value", "label": "Distance Value", "default": 1,
+      "units": [
+        { "value": "km",   "label": "Kilometre (km)",  "toBase": "v => v * 1000",     "fromBase": "v => v / 1000"     },
+        { "value": "m",    "label": "Metre (m)",       "toBase": "v => v",            "fromBase": "v => v"            },
+        { "value": "dm",   "label": "Decimetre (dm)",  "toBase": "v => v * 0.1",      "fromBase": "v => v / 0.1"      },
+        { "value": "cm",   "label": "Centimetre (cm)", "toBase": "v => v * 0.01",     "fromBase": "v => v / 0.01"     },
+        { "value": "mm",   "label": "Millimetre (mm)", "toBase": "v => v * 0.001",    "fromBase": "v => v / 0.001"    },
+        { "value": "um",   "label": "Micrometre (µm)", "toBase": "v => v * 1e-6",     "fromBase": "v => v / 1e-6"     },
+        { "value": "mile", "label": "Mile (mi)",       "toBase": "v => v * 1609.344", "fromBase": "v => v / 1609.344" },
+        { "value": "yard", "label": "Yard (yd)",       "toBase": "v => v * 0.9144",   "fromBase": "v => v / 0.9144"   },
+        { "value": "feet", "label": "Foot (ft)",       "toBase": "v => v * 0.3048",   "fromBase": "v => v / 0.3048"   },
+        { "value": "inch", "label": "Inch (in)",       "toBase": "v => v * 0.0254",   "fromBase": "v => v / 0.0254"   },
+        { "value": "nm",   "label": "Nautical Mile",   "toBase": "v => v * 1852",     "fromBase": "v => v / 1852"     }
+      ]
+    },
+    {
+      "id": "target", "label": "Convert To", "default": 1,
+      "dropdownOnly": true,
+      "units": [
+        { "value": "km",   "label": "Kilometre (km)",  "toBase": "v => v * 1000",     "fromBase": "v => v / 1000"     },
+        { "value": "m",    "label": "Metre (m)",       "toBase": "v => v",            "fromBase": "v => v"            },
+        { "value": "dm",   "label": "Decimetre (dm)",  "toBase": "v => v * 0.1",      "fromBase": "v => v / 0.1"      },
+        { "value": "cm",   "label": "Centimetre (cm)", "toBase": "v => v * 0.01",     "fromBase": "v => v / 0.01"     },
+        { "value": "mm",   "label": "Millimetre (mm)", "toBase": "v => v * 0.001",    "fromBase": "v => v / 0.001"    },
+        { "value": "um",   "label": "Micrometre (µm)", "toBase": "v => v * 1e-6",     "fromBase": "v => v / 1e-6"     },
+        { "value": "mile", "label": "Mile (mi)",       "toBase": "v => v * 1609.344", "fromBase": "v => v / 1609.344" },
+        { "value": "yard", "label": "Yard (yd)",       "toBase": "v => v * 0.9144",   "fromBase": "v => v / 0.9144"   },
+        { "value": "feet", "label": "Foot (ft)",       "toBase": "v => v * 0.3048",   "fromBase": "v => v / 0.3048"   },
+        { "value": "inch", "label": "Inch (in)",       "toBase": "v => v * 0.0254",   "fromBase": "v => v / 0.0254"   },
+        { "value": "nm",   "label": "Nautical Mile",   "toBase": "v => v * 1852",     "fromBase": "v => v / 1852"     }
+      ]
+    }
+  ],
+  "calculate": {
+    "steps": [
+      "const meters    = values.value_unit.toBase(values.value);",
+      "const converted = values.target_unit.fromBase(meters);",
+      "function fmt(n) { if(Math.abs(n)>=1000) return n.toFixed(2); if(Math.abs(n)>=1) return parseFloat(n.toFixed(4)).toString(); return n.toPrecision(4); }",
+      "return { results: [{ label: values.value + ' ' + values.value_unit.label + ' =', value: fmt(converted), unit: values.target_unit.label, highlight: true }], derived: [{ label: 'Kilometres', value: fmt(meters/1000), unit: 'km' }, { label: 'Metres', value: fmt(meters), unit: 'm' }, { label: 'Centimetres', value: fmt(meters/0.01), unit: 'cm' }, { label: 'Millimetres', value: fmt(meters/0.001), unit: 'mm' }, { label: 'Feet', value: fmt(meters/0.3048), unit: 'ft' }, { label: 'Inches', value: fmt(meters/0.0254), unit: 'in' }, { label: 'Miles', value: fmt(meters/1609.344), unit: 'mi' }] };"
+    ]
+  }
+}

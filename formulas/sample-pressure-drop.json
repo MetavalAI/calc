@@ -1,0 +1,87 @@
+{
+  "id": "pressure-drop",
+  "name": "Pressure Drop (Darcy-Weisbach)",
+  "tag": "Fluid Mechanics",
+  "icon": "🔧",
+  "description": "Calculates pressure drop in a pipe using the Darcy-Weisbach equation.",
+  "formula": "ΔP = f × (L/D) × (ρV²/2)",
+  "definitions": [
+    { "symbol": "f",  "label": "Darcy friction factor (dimensionless)" },
+    { "symbol": "L",  "label": "Pipe length" },
+    { "symbol": "D",  "label": "Pipe internal diameter" },
+    { "symbol": "ρ",  "label": "Fluid density" },
+    { "symbol": "V",  "label": "Flow velocity" },
+    { "symbol": "ΔP", "label": "Pressure drop" }
+  ],
+  "unitSystems": {
+    "SI":       { "length": "m",  "diameter": "m",   "density": "kgm3", "velocity": "ms" },
+    "CGS":      { "length": "cm", "diameter": "cm",  "density": "gcm3", "velocity": "cms" },
+    "Imperial": { "length": "ft", "diameter": "inch","density": "lbft3","velocity": "fts" }
+  },
+  "inputs": [
+    {
+      "id": "friction",
+      "label": "Friction Factor (f)",
+      "default": 0.02,
+      "units": [
+        { "value": "dimless", "label": "—", "toBase": "v => v", "fromBase": "v => v" }
+      ]
+    },
+    {
+      "id": "length",
+      "label": "Pipe Length (L)",
+      "default": 100,
+      "units": [
+        { "value": "m",  "label": "m",  "toBase": "v => v",       "fromBase": "v => v"       },
+        { "value": "cm", "label": "cm", "toBase": "v => v*0.01",  "fromBase": "v => v/0.01"  },
+        { "value": "ft", "label": "ft", "toBase": "v => v*0.3048","fromBase": "v => v/0.3048" }
+      ]
+    },
+    {
+      "id": "diameter",
+      "label": "Pipe Diameter (D)",
+      "default": 0.1,
+      "units": [
+        { "value": "m",    "label": "m",    "toBase": "v => v",        "fromBase": "v => v"        },
+        { "value": "cm",   "label": "cm",   "toBase": "v => v*0.01",   "fromBase": "v => v/0.01"   },
+        { "value": "mm",   "label": "mm",   "toBase": "v => v*0.001",  "fromBase": "v => v/0.001"  },
+        { "value": "inch", "label": "inch", "toBase": "v => v*0.0254", "fromBase": "v => v/0.0254" },
+        { "value": "ft",   "label": "ft",   "toBase": "v => v*0.3048", "fromBase": "v => v/0.3048" }
+      ]
+    },
+    {
+      "id": "density",
+      "label": "Fluid Density (ρ)",
+      "default": 1000,
+      "units": [
+        { "value": "kgm3",  "label": "kg/m³",  "toBase": "v => v",        "fromBase": "v => v"        },
+        { "value": "gcm3",  "label": "g/cm³",  "toBase": "v => v*1000",   "fromBase": "v => v/1000"   },
+        { "value": "lbft3", "label": "lb/ft³", "toBase": "v => v*16.0185","fromBase": "v => v/16.0185" }
+      ]
+    },
+    {
+      "id": "velocity",
+      "label": "Flow Velocity (V)",
+      "default": 2,
+      "units": [
+        { "value": "ms",  "label": "m/s",  "toBase": "v => v",       "fromBase": "v => v"       },
+        { "value": "cms", "label": "cm/s", "toBase": "v => v*0.01",  "fromBase": "v => v/0.01"  },
+        { "value": "fts", "label": "ft/s", "toBase": "v => v*0.3048","fromBase": "v => v/0.3048" }
+      ]
+    }
+  ],
+  "calculate": {
+    "steps": [
+      "const f   = values.friction;",
+      "const L   = values.length_unit.toBase(values.length);",
+      "const D   = values.diameter_unit.toBase(values.diameter);",
+      "const rho = values.density_unit.toBase(values.density);",
+      "const V   = values.velocity_unit.toBase(values.velocity);",
+      "if(D<=0) return {results:[],derived:[]};",
+      "const dP_pa  = f * (L/D) * (rho * V * V / 2);",
+      "const dP_bar = dP_pa / 1e5;",
+      "const dP_psi = dP_pa * 0.000145038;",
+      "return { results: [ { label:'Pressure Drop', value: dP_pa.toFixed(2), unit:'Pa', highlight:true }, { label:'Pressure Drop', value: dP_bar.toFixed(4), unit:'bar' } ], derived: [ { label:'Velocity', value: V.toFixed(3), unit:'m/s' }, { label:'L/D Ratio', value: (L/D).toFixed(2), unit:'-' }, { label:'Dynamic Pressure', value: (rho*V*V/2).toFixed(2), unit:'Pa' }, { label:'in PSI', value: dP_psi.toFixed(4), unit:'psi' } ] };"
+    ]
+  }
+}

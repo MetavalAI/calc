@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metaval Engineering Calculator</title>
+<link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ NAVBAR -->
+<nav class="top-navbar">
+  <div class="nav-left">
+    <span class="brand-dot"></span>
+    <span class="brand-name">METAVAL</span>
+    <span class="divider">|</span>
+    <span class="app-name">ENGINEERING CALCULATOR</span>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="openFormulaManager()">📂 Formula Library</button>
+    <button class="nav-btn primary" onclick="openCreateDialog()">+ Create Formula</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ MAIN -->
+<div class="container">
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-label">Add Calculator:</span>
+      <select id="formulaDropdown" class="formula-dropdown">
+        <option value="">— Select a formula —</option>
+
+
+      </select>
+      <button class="btn-add" onclick="MetaEngine.addPanel()">+ Open</button>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn-clear" onclick="MetaEngine.clearAll()">Clear All</button>
+    </div>
+  </div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">⚙️</div>
+    <div class="empty-title">Select a Calculator</div>
+    <div class="empty-sub">
+      Choose from built-in formulas or upload your own JSON via <strong>+ Create Formula</strong>.<br>
+      Open multiple calculators side by side.
+    </div>
+  </div>
+
+  <div class="panels-grid" id="panelsGrid"></div>
+</div>
+
+<footer class="footer">
+  <span>Metaval Engineering Calculator</span>
+  <span class="footer-link">metaval.com</span>
+</footer>
+
+
+<!-- ═══════════════════════════════════════ FORMULA MANAGER MODAL -->
+<div class="modal-overlay" id="fmOverlay" style="display:none" onclick="closeFmOverlay(event)">
+  <div class="big-modal">
+
+    <div class="bm-header">
+      <div class="bm-title">📂 Formula Library</div>
+      <button class="panel-close" onclick="closeFormulaManager()">✕</button>
+    </div>
+
+    <div class="bm-toolbar">
+      <input class="bm-search" id="fmSearch" placeholder="🔍  Search formulas…" oninput="renderFmList()">
+      <button class="btn-add" onclick="openCreateDialog()">+ Upload / Create</button>
+    </div>
+
+    <div class="bm-list" id="fmList">
+      <div class="bm-empty">Loading…</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ READ / EDIT FORMULA MODAL -->
+<div class="modal-overlay" id="feOverlay" style="display:none" onclick="closeFeOverlay(event)">
+  <div class="big-modal wide-modal">
+
+    <div class="bm-header">
+      <div class="bm-title" id="feTitle">Formula</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="icon-btn" id="feEditBtn" onclick="toggleFeEdit()">✏ Edit</button>
+        <button class="icon-btn danger" id="feDeleteBtn" onclick="deleteCurrentFormula()">🗑 Delete</button>
+        <button class="panel-close" onclick="closeFeModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- READ MODE -->
+    <div id="feReadMode" class="fe-read"></div>
+
+    <!-- EDIT MODE -->
+    <div id="feEditMode" style="display:none" class="fe-edit">
+      <div class="fe-edit-label">Edit JSON directly:</div>
+      <textarea id="feEditArea" class="fe-textarea" spellcheck="false"></textarea>
+      <div class="fe-edit-actions">
+        <span class="fe-edit-hint">⚠ Edit carefully — valid JSON required</span>
+        <button class="btn-secondary" onclick="cancelFeEdit()">Cancel</button>
+        <button class="btn-primary" onclick="saveFeEdit()">💾 Save Changes</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ CREATE / UPLOAD DIALOG -->
+<div class="modal-overlay" id="createOverlay" style="display:none" onclick="closeCreateOverlay(event)">
+  <div class="big-modal">
+
+    <div class="bm-header">
+      <div class="bm-title">+ Create / Upload Formula</div>
+      <button class="panel-close" onclick="closeCreateDialog()">✕</button>
+    </div>
+
+    <div class="create-tabs">
+      <button class="ctab active" id="ctab-upload" onclick="switchCtab('upload')">📁 Upload JSON File</button>
+      <button class="ctab" id="ctab-paste"  onclick="switchCtab('paste')">📋 Paste / Write JSON</button>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div id="ctab-upload-body" class="ctab-body">
+      <div class="upload-zone" id="uploadZone"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleDrop(event)">
+        <div class="uz-icon">📄</div>
+        <div class="uz-text">Drag & drop a <strong>.json</strong> file here</div>
+        <div class="uz-sub">or</div>
+        <button class="btn-add" onclick="document.getElementById('fileInput').click()">Browse File</button>
+        <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileSelect(event)">
+      </div>
+      <div id="uploadPreview" style="display:none">
+        <div class="up-name" id="uploadFileName"></div>
+        <pre class="up-preview" id="uploadPreviewText"></pre>
+        <div class="fe-edit-actions">
+          <button class="btn-secondary" onclick="clearUpload()">✕ Clear</button>
+          <button class="btn-primary"   onclick="submitUpload()">📤 Upload Formula</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASTE TAB -->
+    <div id="ctab-paste-body" class="ctab-body" style="display:none">
+      <div class="fe-edit-label">Paste or write your formula JSON:</div>
+      <textarea id="pasteArea" class="fe-textarea tall" spellcheck="false" placeholder='{
+  "name": "My Formula",
+  "tag":  "Category",
+  "icon": "🔢",
+  "formula": "y = mx + c",
+  "inputs": [ ... ],
+  "calculate": { "steps": [ ... ] }
+}'></textarea>
+      <div class="fe-edit-actions">
+        <button class="btn-secondary" onclick="loadSampleJson()">Load Sample</button>
+        <button class="btn-primary"   onclick="submitPaste()">💾 Save Formula</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ SCRIPTS -->
+<script src="{{ url_for('static', filename='js/engine.js') }}"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  FORMULA MANAGER  (all fetch calls hit Flask /api/formulas)
+// ══════════════════════════════════════════════════════════
+
+let _fmData      = [];   // JSON formulas from server
+let _currentFile = null;
+let _feEditing   = false;
+let _uploadRaw   = null;
+
+/* ── Load JSON formulas from server ── */
+async function loadFmData() {
+  const res = await fetch("/api/formulas");
+  _fmData = await res.json();
+}
+
+/* ── All formulas = JSON files from server ── */
+function allFormulas() {
+  return _fmData.map(f => ({
+    type:        "json",
+    id:          f.id,
+    filename:    f.filename,
+    name:        f.name,
+    tag:         f.tag  || "",
+    icon:        f.icon || "🔢",
+    description: f.description || "",
+  }));
+}
+
+/* ── Refresh flat dropdown ── */
+async function refreshDropdown() {
+  await loadFmData();
+  const sel = document.getElementById("formulaDropdown");
+  // keep first placeholder option, replace rest
+  while (sel.options.length > 1) sel.remove(1);
+  allFormulas().forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = f.filename;
+    opt.textContent = f.icon + "  " + f.name;
+    sel.appendChild(opt);
+  });
+}
+
+/* ── FORMULA MANAGER MODAL ── */
+function openFormulaManager() {
+  loadFmData().then(() => {
+    renderFmList();
+    document.getElementById("fmOverlay").style.display = "flex";
+  });
+}
+function closeFormulaManager() {
+  document.getElementById("fmOverlay").style.display = "none";
+}
+function closeFmOverlay(e) {
+  if (e.target === document.getElementById("fmOverlay")) closeFormulaManager();
+}
+
+function renderFmList() {
+  const q        = (document.getElementById("fmSearch").value || "").toLowerCase();
+  const el       = document.getElementById("fmList");
+  const all      = allFormulas();
+  const filtered = all.filter(f =>
+    f.name.toLowerCase().includes(q) ||
+    f.tag.toLowerCase().includes(q)
+  );
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="bm-empty">No formulas found.</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(f => {
+    return `
+    <div class="fm-card fm-clickable" onclick="openFormulaView('${f.filename}')">
+      <div class="fm-icon">${f.icon}</div>
+      <div class="fm-info">
+        <div class="fm-name">${f.name}</div>
+        ${f.tag ? `<div class="fm-tag">${f.tag}</div>` : ""}
+        <div class="fm-desc">${f.description}</div>
+      </div>
+      <div class="fm-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaView('${f.filename}')">👁 View</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaEdit('${f.filename}')">✏ Edit</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('${f.filename}','${f.name}')">🗑</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ── FORMULA READ / EDIT MODAL ── */
+async function openFormulaView(filename) {
+  _currentFile = filename;
+  _feEditing   = false;
+  const res  = await fetch(`/api/formulas/${filename}`);
+  const data = await res.json();
+  renderFeRead(data);
+  document.getElementById("feTitle").textContent = data.icon + " " + data.name;
+  document.getElementById("feReadMode").style.display  = "block";
+  document.getElementById("feEditMode").style.display  = "none";
+  document.getElementById("feEditBtn").textContent     = "✏ Edit";
+  document.getElementById("feOverlay").style.display   = "flex";
+}
+
+async function openFormulaEdit(filename) {
+  await openFormulaView(filename);
+  toggleFeEdit();
+}
+
+function closeFeModal() {
+  document.getElementById("feOverlay").style.display = "none";
+  _currentFile = null;
+}
+function closeFeOverlay(e) {
+  if (e.target === document.getElementById("feOverlay")) closeFeModal();
+}
+
+function renderFeRead(data) {
+  const defsHtml = (data.definitions||[]).map(d =>
+    `<tr><td class="rd-sym">${d.symbol}</td><td>${d.label}</td></tr>`
+  ).join("");
+
+  const inputsHtml = (data.inputs||[]).map(inp => {
+    const units = (inp.units||[]).map(u => u.label).join(", ");
+    return `<tr>
+      <td class="rd-sym">${inp.id}</td>
+      <td>${inp.label}</td>
+      <td>${inp.default}</td>
+      <td class="rd-units">${units}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("feReadMode").innerHTML = `
+    <div class="rd-section">
+      <div class="rd-label">Formula</div>
+      <div class="rd-formula">${data.formula || "—"}</div>
+    </div>
+
+    ${data.description ? `<div class="rd-section"><div class="rd-label">Description</div><p class="rd-desc">${data.description}</p></div>` : ""}
+
+    ${defsHtml ? `
+    <div class="rd-section">
+      <div class="rd-label">Definitions</div>
+      <table class="rd-table"><tbody>${defsHtml}</tbody></table>
+    </div>` : ""}
+
+    ${inputsHtml ? `
+    <div class="rd-section">
+      <div class="rd-label">Inputs</div>
+      <table class="rd-table">
+        <thead><tr><th>ID</th><th>Label</th><th>Default</th><th>Available Units</th></tr></thead>
+        <tbody>${inputsHtml}</tbody>
+      </table>
+    </div>` : ""}
+
+    <div class="rd-section">
+      <div class="rd-label">Raw JSON</div>
+      <pre class="rd-json">${escHtml(JSON.stringify(data, null, 2))}</pre>
+    </div>
+  `;
+}
+
+function toggleFeEdit() {
+  _feEditing = !_feEditing;
+  if (_feEditing) {
+    // populate textarea from read-mode raw JSON
+    const pre = document.querySelector("#feReadMode .rd-json");
+    document.getElementById("feEditArea").value = pre ? pre.textContent : "";
+    document.getElementById("feReadMode").style.display = "none";
+    document.getElementById("feEditMode").style.display = "block";
+    document.getElementById("feEditBtn").textContent    = "👁 View";
+  } else {
+    document.getElementById("feReadMode").style.display = "block";
+    document.getElementById("feEditMode").style.display = "none";
+    document.getElementById("feEditBtn").textContent    = "✏ Edit";
+  }
+}
+function cancelFeEdit() {
+  _feEditing = false;
+  document.getElementById("feReadMode").style.display = "block";
+  document.getElementById("feEditMode").style.display = "none";
+  document.getElementById("feEditBtn").textContent    = "✏ Edit";
+}
+
+async function saveFeEdit() {
+  let data;
+  try { data = JSON.parse(document.getElementById("feEditArea").value); }
+  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+
+  const res = await fetch(`/api/formulas/${_currentFile}`, {
+    method: "PUT",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+  if (res.ok) {
+    alert("✅ Saved!");
+    cancelFeEdit();
+    renderFeRead(data);
+    refreshDropdown();
+    loadFmData().then(renderFmList);
+  } else {
+    alert("❌ Save failed");
+  }
+}
+
+/* ── DELETE ── */
+async function deleteCurrentFormula() {
+  if (!_currentFile) return;
+  const name = document.getElementById("feTitle").textContent;
+  if (!confirm(`Delete "${name}"?\nThis cannot be undone.`)) return;
+  await doDelete(_currentFile);
+  closeFeModal();
+}
+
+async function confirmDelete(filename, name) {
+  if (!confirm(`Delete "${name}"?\nThis cannot be undone.`)) return;
+  await doDelete(filename);
+}
+
+async function doDelete(filename) {
+  const res = await fetch(`/api/formulas/${filename}`, { method:"DELETE" });
+  if (res.ok) {
+    await loadFmData();
+    renderFmList();
+    refreshDropdown();
+  } else {
+    alert("❌ Delete failed");
+  }
+}
+
+/* ── CREATE / UPLOAD DIALOG ── */
+function openCreateDialog() {
+  document.getElementById("createOverlay").style.display = "flex";
+}
+function closeCreateDialog() {
+  document.getElementById("createOverlay").style.display = "none";
+}
+function closeCreateOverlay(e) {
+  if (e.target === document.getElementById("createOverlay")) closeCreateDialog();
+}
+
+function switchCtab(which) {
+  ["upload","paste"].forEach(t => {
+    document.getElementById(`ctab-${t}`).classList.toggle("active", t===which);
+    document.getElementById(`ctab-${t}-body`).style.display = t===which ? "block" : "none";
+  });
+}
+
+/* FILE UPLOAD */
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("uploadZone").classList.remove("drag");
+  const file = e.dataTransfer.files[0];
+  if (file) readUploadFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) readUploadFile(file);
+}
+function readUploadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    _uploadRaw = ev.target.result;
+    document.getElementById("uploadFileName").textContent = "📄 " + file.name;
+    document.getElementById("uploadPreviewText").textContent =
+      _uploadRaw.length > 1500 ? _uploadRaw.slice(0,1500) + "\n…(truncated)" : _uploadRaw;
+    document.getElementById("uploadZone").style.display    = "none";
+    document.getElementById("uploadPreview").style.display = "block";
+  };
+  reader.readAsText(file);
+}
+function clearUpload() {
+  _uploadRaw = null;
+  document.getElementById("fileInput").value = "";
+  document.getElementById("uploadZone").style.display    = "block";
+  document.getElementById("uploadPreview").style.display = "none";
+}
+
+async function submitUpload() {
+  if (!_uploadRaw) return;
+  let data;
+  try { data = JSON.parse(_uploadRaw); }
+  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+  await doSaveFormula(data);
+}
+
+async function submitPaste() {
+  const raw = document.getElementById("pasteArea").value.trim();
+  if (!raw) { alert("Paste some JSON first."); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+  await doSaveFormula(data);
+}
+
+async function doSaveFormula(data) {
+  const res = await fetch("/api/formulas", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+  const result = await res.json();
+  if (res.ok) {
+    alert("✅ Formula saved: " + result.filename);
+    closeCreateDialog();
+    refreshDropdown();
+    loadFmData().then(renderFmList);
+    clearUpload();
+    document.getElementById("pasteArea").value = "";
+  } else {
+    alert("❌ Error: " + (result.error || "Unknown"));
+  }
+}
+
+function loadSampleJson() {
+  fetch("/api/formulas/sample-pressure-drop.json")
+    .then(r => r.text())
+    .then(t => { document.getElementById("pasteArea").value = t; })
+    .catch(() => alert("Sample not found. Upload one first."));
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ── BOOT ── */
+document.addEventListener("DOMContentLoaded", () => {
+  refreshDropdown();
+});
+</script>
+
+</body>
+</html>
