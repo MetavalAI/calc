@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Metaval Engineering Calculator</title>
-<link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="shortcut icon" href="static/images/favicon.ico">
+<link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
 
@@ -170,7 +170,10 @@
 
 
 <!-- ═══════════════════════════════════════ SCRIPTS -->
-<script src="{{ url_for('static', filename='js/engine.js') }}"></script>
+<!-- Supabase JS SDK (CDN) — must load before supabaseClient.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="static/js/supabaseClient.js"></script>
+<script src="static/js/engine.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -182,18 +185,28 @@ let _currentFile = null;
 let _feEditing   = false;
 let _uploadRaw   = null;
 
-/* ── Load JSON formulas from server ── */
+/* ── Load formulas from Supabase ── */
 async function loadFmData() {
-  const res = await fetch("/api/formulas");
-  _fmData = await res.json();
+  const { data, error } = await supabaseClient
+    .from("formulas")
+    .select("id, slug, name, tag, icon, description")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load formulas:", error.message);
+    alert("❌ Could not load formulas: " + error.message);
+    _fmData = [];
+    return;
+  }
+  _fmData = data;
 }
 
-/* ── All formulas = JSON files from server ── */
+/* ── All formulas = rows from Supabase ── */
 function allFormulas() {
   return _fmData.map(f => ({
     type:        "json",
     id:          f.id,
-    filename:    f.filename,
+    slug:        f.slug,
     name:        f.name,
     tag:         f.tag  || "",
     icon:        f.icon || "🔢",
@@ -209,7 +222,7 @@ async function refreshDropdown() {
   while (sel.options.length > 1) sel.remove(1);
   allFormulas().forEach(f => {
     const opt = document.createElement("option");
-    opt.value = f.filename;
+    opt.value = f.slug;
     opt.textContent = f.icon + "  " + f.name;
     sel.appendChild(opt);
   });
@@ -245,7 +258,7 @@ function renderFmList() {
 
   el.innerHTML = filtered.map(f => {
     return `
-    <div class="fm-card fm-clickable" onclick="openFormulaView('${f.filename}')">
+    <div class="fm-card fm-clickable" onclick="openFormulaView('${f.slug}')">
       <div class="fm-icon">${f.icon}</div>
       <div class="fm-info">
         <div class="fm-name">${f.name}</div>
@@ -253,20 +266,31 @@ function renderFmList() {
         <div class="fm-desc">${f.description}</div>
       </div>
       <div class="fm-actions" onclick="event.stopPropagation()">
-        <button class="icon-btn" onclick="event.stopPropagation();openFormulaView('${f.filename}')">👁 View</button>
-        <button class="icon-btn" onclick="event.stopPropagation();openFormulaEdit('${f.filename}')">✏ Edit</button>
-        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('${f.filename}','${f.name}')">🗑</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaView('${f.slug}')">👁 View</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaEdit('${f.slug}')">✏ Edit</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('${f.slug}','${f.name}')">🗑</button>
       </div>
     </div>`;
   }).join("");
 }
 
 /* ── FORMULA READ / EDIT MODAL ── */
-async function openFormulaView(filename) {
-  _currentFile = filename;
+async function openFormulaView(slug) {
+  _currentFile = slug;   // holds the slug now — kept as _currentFile for now, renamed properly once Edit/Delete are migrated
   _feEditing   = false;
-  const res  = await fetch(`/api/formulas/${filename}`);
-  const data = await res.json();
+
+  const { data: row, error } = await supabaseClient
+    .from("formulas")
+    .select("formula_json")
+    .eq("slug", slug)
+    .single();
+
+  if (error) {
+    alert("❌ Could not load formula: " + error.message);
+    return;
+  }
+
+  const data = row.formula_json;
   renderFeRead(data);
   document.getElementById("feTitle").textContent = data.icon + " " + data.name;
   document.getElementById("feReadMode").style.display  = "block";
@@ -275,8 +299,8 @@ async function openFormulaView(filename) {
   document.getElementById("feOverlay").style.display   = "flex";
 }
 
-async function openFormulaEdit(filename) {
-  await openFormulaView(filename);
+async function openFormulaEdit(slug) {
+  await openFormulaView(slug);
   toggleFeEdit();
 }
 
@@ -360,20 +384,30 @@ async function saveFeEdit() {
   try { data = JSON.parse(document.getElementById("feEditArea").value); }
   catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
 
-  const res = await fetch(`/api/formulas/${_currentFile}`, {
-    method: "PUT",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(data)
-  });
-  if (res.ok) {
-    alert("✅ Saved!");
-    cancelFeEdit();
-    renderFeRead(data);
-    refreshDropdown();
-    loadFmData().then(renderFmList);
-  } else {
-    alert("❌ Save failed");
+  if (!data || !data.name) {
+    alert("❌ Error: 'name' field is required");
+    return;
   }
+
+  // Note: we update formula_json only, never the slug column itself.
+  // Editing a formula's name should not change its identity/URL —
+  // the autoslug trigger only fires when slug is null/empty, so an
+  // UPDATE that leaves slug untouched keeps it stable across edits.
+  const { error } = await supabaseClient
+    .from("formulas")
+    .update({ formula_json: data })
+    .eq("slug", _currentFile);
+
+  if (error) {
+    alert("❌ Save failed: " + error.message);
+    return;
+  }
+
+  alert("✅ Saved!");
+  cancelFeEdit();
+  renderFeRead(data);
+  refreshDropdown();
+  loadFmData().then(renderFmList);
 }
 
 /* ── DELETE ── */
@@ -385,20 +419,25 @@ async function deleteCurrentFormula() {
   closeFeModal();
 }
 
-async function confirmDelete(filename, name) {
+async function confirmDelete(slug, name) {
   if (!confirm(`Delete "${name}"?\nThis cannot be undone.`)) return;
-  await doDelete(filename);
+  await doDelete(slug);
 }
 
-async function doDelete(filename) {
-  const res = await fetch(`/api/formulas/${filename}`, { method:"DELETE" });
-  if (res.ok) {
-    await loadFmData();
-    renderFmList();
-    refreshDropdown();
-  } else {
-    alert("❌ Delete failed");
+async function doDelete(slug) {
+  const { error } = await supabaseClient
+    .from("formulas")
+    .delete()
+    .eq("slug", slug);
+
+  if (error) {
+    alert("❌ Delete failed: " + error.message);
+    return;
   }
+
+  await loadFmData();
+  renderFmList();
+  refreshDropdown();
 }
 
 /* ── CREATE / UPLOAD DIALOG ── */
@@ -467,29 +506,47 @@ async function submitPaste() {
 }
 
 async function doSaveFormula(data) {
-  const res = await fetch("/api/formulas", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(data)
-  });
-  const result = await res.json();
-  if (res.ok) {
-    alert("✅ Formula saved: " + result.filename);
-    closeCreateDialog();
-    refreshDropdown();
-    loadFmData().then(renderFmList);
-    clearUpload();
-    document.getElementById("pasteArea").value = "";
-  } else {
-    alert("❌ Error: " + (result.error || "Unknown"));
+  if (!data || !data.name) {
+    alert("❌ Error: 'name' field is required");
+    return;
   }
+
+  // slug is intentionally omitted here — the DB trigger
+  // (formulas_autoslug) derives it from formula_json->>'name'
+  // and guarantees uniqueness (appending -2, -3, ... on
+  // collision), so we don't duplicate that logic client-side.
+  const { data: inserted, error } = await supabaseClient
+    .from("formulas")
+    .insert({ formula_json: data })
+    .select("slug, name")
+    .single();
+
+  if (error) {
+    alert("❌ Error: " + error.message);
+    return;
+  }
+
+  alert("✅ Formula saved: " + inserted.slug);
+  closeCreateDialog();
+  refreshDropdown();
+  loadFmData().then(renderFmList);
+  clearUpload();
+  document.getElementById("pasteArea").value = "";
 }
 
 function loadSampleJson() {
-  fetch("/api/formulas/sample-pressure-drop.json")
-    .then(r => r.text())
-    .then(t => { document.getElementById("pasteArea").value = t; })
-    .catch(() => alert("Sample not found. Upload one first."));
+  supabaseClient
+    .from("formulas")
+    .select("formula_json")
+    .eq("slug", "sample-pressure-drop")
+    .single()
+    .then(({ data, error }) => {
+      if (error || !data) {
+        alert("Sample not found. Upload one first.");
+        return;
+      }
+      document.getElementById("pasteArea").value = JSON.stringify(data.formula_json, null, 2);
+    });
 }
 
 function escHtml(s) {

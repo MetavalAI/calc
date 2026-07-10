@@ -1,6 +1,7 @@
 /**
  * METAVAL ENGINE — Pure JSON Formula Runner
- * All formulas live in /formulas/*.json (served via Flask API)
+ * Formulas live in Supabase (public.formulas.formula_json), fetched
+ * directly via the Supabase JS SDK (supabaseClient, from supabaseClient.js).
  * No separate JS plugin system needed.
  */
 (function () {
@@ -17,12 +18,18 @@
     const val = sel ? sel.value : "";
     if (!val) { alert("Please select a formula first."); return; }
 
-    // val is directly the filename e.g. "cv-calculator.json"
-    const filename = val;
+    // val is the formula's slug (Supabase primary lookup key)
+    const slug = val;
 
-    fetch(`/api/formulas/${filename}`)
-      .then(r => r.json())
-      .then(formula => {
+    supabaseClient
+      .from("formulas")
+      .select("formula_json")
+      .eq("slug", slug)
+      .single()
+      .then(({ data, error }) => {
+        if (error) { alert("Could not load formula: " + error.message); return; }
+
+        const formula    = data.formula_json;
         const id         = ++panelSeq;
         const unitSystem = "SI";
         const fieldUnits = buildDefaultFieldUnits(formula, unitSystem);
@@ -34,8 +41,7 @@
         empty.style.display = "none";
         updateGridCols();
         recalc(id);
-      })
-      .catch(e => alert("Could not load formula: " + e));
+      });
 
     if (sel) sel.value = "";
   }
