@@ -29,6 +29,8 @@ Thumbs.db
 
 load test/
 test.js
+loadtest.js
+k6_formulas_test.js
 
 *.zip
 

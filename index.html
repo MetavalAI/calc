@@ -177,7 +177,7 @@
 
 <script>
 // ══════════════════════════════════════════════════════════
-//  FORMULA MANAGER  (all fetch calls hit Flask /api/formulas)
+//  FORMULA MANAGER  (all calls go through supabaseClient → Supabase)
 // ══════════════════════════════════════════════════════════
 
 let _fmData      = [];   // JSON formulas from server
@@ -216,9 +216,24 @@ function allFormulas() {
 
 /* ── Refresh flat dropdown ── */
 async function refreshDropdown() {
+  await syncFormulaUI();
+}
+
+/* ── Single source of truth for refreshing BOTH the dropdown and the
+   Formula Library list after any create/update/delete. Previously
+   these were refreshed via two separate, unawaited loadFmData()
+   calls fired back-to-back — since network responses aren't
+   guaranteed to resolve in the order they were sent, a slightly
+   slower "first" request could overwrite a faster "second" one with
+   stale data, leaving the dropdown/list looking frozen until a full
+   page reload forced a clean fetch. This does exactly one fetch,
+   fully awaited, then updates both UI pieces from that one result. */
+async function syncFormulaUI() {
   await loadFmData();
+  renderFmList();
+
   const sel = document.getElementById("formulaDropdown");
-  // keep first placeholder option, replace rest
+  const prevValue = sel.value;   // preserve selection if it still exists
   while (sel.options.length > 1) sel.remove(1);
   allFormulas().forEach(f => {
     const opt = document.createElement("option");
@@ -226,6 +241,9 @@ async function refreshDropdown() {
     opt.textContent = f.icon + "  " + f.name;
     sel.appendChild(opt);
   });
+  if ([...sel.options].some(o => o.value === prevValue)) {
+    sel.value = prevValue;
+  }
 }
 
 /* ── FORMULA MANAGER MODAL ── */
@@ -406,8 +424,7 @@ async function saveFeEdit() {
   alert("✅ Saved!");
   cancelFeEdit();
   renderFeRead(data);
-  refreshDropdown();
-  loadFmData().then(renderFmList);
+  await syncFormulaUI();
 }
 
 /* ── DELETE ── */
@@ -435,9 +452,7 @@ async function doDelete(slug) {
     return;
   }
 
-  await loadFmData();
-  renderFmList();
-  refreshDropdown();
+  await syncFormulaUI();
 }
 
 /* ── CREATE / UPLOAD DIALOG ── */
@@ -528,8 +543,7 @@ async function doSaveFormula(data) {
 
   alert("✅ Formula saved: " + inserted.slug);
   closeCreateDialog();
-  refreshDropdown();
-  loadFmData().then(renderFmList);
+  await syncFormulaUI();
   clearUpload();
   document.getElementById("pasteArea").value = "";
 }
