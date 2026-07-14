@@ -9,6 +9,7 @@
 
   let panelSeq  = 0;
   const panelState = {};   // { plugin, unitSystem, fieldUnits }
+  const formulacache = {};  // { slug: formula_json }
 
   window.MetaEngine = { addPanel, removePanel, clearAll, setUnitSystem, openUnitEditor, closeUnitEditor, applyUnitEdits, recalc };
 
@@ -21,14 +22,19 @@
     // val is the formula's slug (Supabase primary lookup key)
     const slug = val;
 
-    supabaseClient
-      .from("formulas")
-      .select("formula_json")
-      .eq("slug", slug)
-      .single()
-      .then(({ data, error }) => {
-        if (error) { alert("Could not load formula: " + error.message); return; }
+    const cached = formulaCache[slug];
+    const fetcher = cached
+    ? Promise.resolve({ data: { formula_json: cached }, error: null })
+    : supabaseClient.from("formulas").select("formula_json").eq("slug", slug).single();
 
+fetcher.then(({ data, error }) => {
+  if (!error) formulaCache[slug] = data.formula_json;
+        if (error) { alert("Could not load formula: " + error.message); return; }
+        
+        // Clear existing panels before opening new one
+      document.getElementById("panelsGrid").innerHTML = "";
+      Object.keys(panelState).forEach(k => delete panelState[k]);
+      panelSeq = 0;
         const formula    = data.formula_json;
         const id         = ++panelSeq;
         const unitSystem = "SI";
@@ -37,7 +43,8 @@
 
         const grid  = document.getElementById("panelsGrid");
         const empty = document.getElementById("emptyState");
-        grid.insertAdjacentHTML("beforeend", buildPanelHTML(id, formula, unitSystem, fieldUnits));
+        grid.insertAdjacentHTML("afterbegin", buildPanelHTML(id, formula, unitSystem, fieldUnits));
+        window.scrollTo({ top: 0, behavior: "smooth" });
         empty.style.display = "none";
         updateGridCols();
         recalc(id);
@@ -58,12 +65,12 @@
   function clearAll() {
     document.getElementById("panelsGrid").innerHTML = "";
     Object.keys(panelState).forEach(k => delete panelState[k]);
+    panelSeq = 0;
     document.getElementById("emptyState").style.display = "flex";
   }
 
   function updateGridCols() {
-    const n = document.querySelectorAll(".calc-panel").length;
-    document.getElementById("panelsGrid").style.gridTemplateColumns = n >= 2 ? "repeat(2,1fr)" : "1fr";
+  // single panel only — no grid needed
   }
 
   /* ── Unit helpers ── */
@@ -96,11 +103,6 @@
       buildInputRow(id, inp, fieldUnits[inp.id])
     ).join("");
 
-    const sysTabs = ["SI","CGS","Imperial"].map(s =>
-      `<button class="sys-tab${s===unitSystem?" active":""}" data-sys="${s}"
-         onclick="MetaEngine.setUnitSystem(${id},'${s}')">${s}</button>`
-    ).join("");
-
     return `
 <div class="calc-panel" id="panel-${id}">
   <div class="panel-header">
@@ -110,13 +112,8 @@
       <span class="panel-tag">${f.tag||""}</span>
     </div>
     <div class="panel-header-actions">
-      <button class="icon-btn" onclick="MetaEngine.openUnitEditor(${id})">⚙ Units</button>
       <button class="panel-close" onclick="MetaEngine.removePanel(${id})">✕</button>
     </div>
-  </div>
-
-  <div class="sys-switcher">
-    <span class="sys-label">Unit System:</span>${sysTabs}
   </div>
 
   <div class="panel-formula-box">
