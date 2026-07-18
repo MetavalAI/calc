@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════ NAVBAR -->
+<!-- NAVBAR -->
 <nav class="top-navbar">
   <div class="nav-left">
     <span class="brand-dot"></span>
@@ -18,26 +18,23 @@
     <span class="app-name">ENGINEERING CALCULATOR</span>
   </div>
   <div class="nav-right">
-    <button class="nav-btn" onclick="openFormulaManager()">📂 Formula Library</button>
+    <button class="nav-btn" onclick="openFormulaManager()">Formula Library</button>
     <button class="nav-btn primary" onclick="openCreateDialog()">+ Create Formula</button>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════ MAIN -->
+<!-- MAIN CONTENT -->
 <div class="container">
-
   <div class="toolbar">
     <div class="toolbar-left">
       <span class="toolbar-label">Add Calculator:</span>
       <select id="formulaDropdown" class="formula-dropdown">
         <option value="">— Select a formula —</option>
 
-
       </select>
       <button class="btn-add" onclick="MetaEngine.addPanel()">+ Open</button>
     </div>
     <div class="toolbar-right">
-
     </div>
   </div>
 
@@ -46,10 +43,8 @@
     <div class="empty-title">Select a Calculator</div>
     <div class="empty-sub">
       Choose from built-in formulas or upload your own JSON via <strong>+ Create Formula</strong>.<br>
-      Open multiple calculators side by side.
     </div>
   </div>
-
   <div class="panels-grid" id="panelsGrid"></div>
 </div>
 
@@ -80,38 +75,31 @@
   </div>
 </footer>
 
-
-<!-- ═══════════════════════════════════════ FORMULA MANAGER MODAL -->
+<!--FORMULA MANAGER MODAL -->
 <div class="modal-overlay" id="fmOverlay" style="display:none" onclick="closeFmOverlay(event)">
   <div class="big-modal">
-
     <div class="bm-header">
-      <div class="bm-title">📂 Formula Library</div>
+      <div class="bm-title">Formula Library</div>
       <button class="panel-close" onclick="closeFormulaManager()">✕</button>
     </div>
-
     <div class="bm-toolbar">
-      <input class="bm-search" id="fmSearch" placeholder="🔍  Search formulas…" oninput="renderFmList()">
+      <input class="bm-search" id="fmSearch" placeholder="Search formulas…" oninput="renderFmList()">
       <button class="btn-add" onclick="openCreateDialog()">+ Upload / Create</button>
     </div>
-
     <div class="bm-list" id="fmList">
       <div class="bm-empty">Loading…</div>
     </div>
-
   </div>
 </div>
 
-
-<!-- ═══════════════════════════════════════ READ / EDIT FORMULA MODAL -->
+<!-- READ / EDIT FORMULA MODAL -->
 <div class="modal-overlay" id="feOverlay" style="display:none" onclick="closeFeOverlay(event)">
   <div class="big-modal wide-modal">
-
     <div class="bm-header">
       <div class="bm-title" id="feTitle">Formula</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="icon-btn" id="feEditBtn" onclick="toggleFeEdit()">✏ Edit</button>
-        <button class="icon-btn danger" id="feDeleteBtn" onclick="deleteCurrentFormula()">🗑 Delete</button>
+        <button class="icon-btn" id="feEditBtn" onclick="toggleFeEdit()">Edit</button>
+        <button class="icon-btn danger" id="feDeleteBtn" onclick="deleteCurrentFormula()">Delete</button>
         <button class="panel-close" onclick="closeFeModal()">✕</button>
       </div>
     </div>
@@ -126,26 +114,22 @@
       <div class="fe-edit-actions">
         <span class="fe-edit-hint">⚠ Edit carefully — valid JSON required</span>
         <button class="btn-secondary" onclick="cancelFeEdit()">Cancel</button>
-        <button class="btn-primary" onclick="saveFeEdit()">💾 Save Changes</button>
+        <button class="btn-primary" onclick="saveFeEdit()">Save Changes</button>
       </div>
     </div>
-
   </div>
 </div>
 
-
-<!-- ═══════════════════════════════════════ CREATE / UPLOAD DIALOG -->
+<!-- CREATE / UPLOAD DIALOG -->
 <div class="modal-overlay" id="createOverlay" style="display:none" onclick="closeCreateOverlay(event)">
   <div class="big-modal">
-
     <div class="bm-header">
       <div class="bm-title">+ Create / Upload Formula</div>
       <button class="panel-close" onclick="closeCreateDialog()">✕</button>
     </div>
-
     <div class="create-tabs">
-      <button class="ctab active" id="ctab-upload" onclick="switchCtab('upload')">📁 Upload JSON File</button>
-      <button class="ctab" id="ctab-paste"  onclick="switchCtab('paste')">📋 Paste / Write JSON</button>
+      <button class="ctab active" id="ctab-upload" onclick="switchCtab('upload')">Upload JSON File</button>
+      <button class="ctab" id="ctab-paste"  onclick="switchCtab('paste')">Paste / Write JSON</button>
     </div>
 
     <!-- UPLOAD TAB -->
@@ -165,7 +149,7 @@
         <pre class="up-preview" id="uploadPreviewText"></pre>
         <div class="fe-edit-actions">
           <button class="btn-secondary" onclick="clearUpload()">✕ Clear</button>
-          <button class="btn-primary"   onclick="submitUpload()">📤 Upload Formula</button>
+          <button class="btn-primary"   onclick="submitUpload()">Upload Formula</button>
         </div>
       </div>
     </div>
@@ -183,43 +167,28 @@
 }'></textarea>
       <div class="fe-edit-actions">
         <button class="btn-secondary" onclick="loadSampleJson()">Load Sample</button>
-        <button class="btn-primary"   onclick="submitPaste()">💾 Save Formula</button>
+        <button class="btn-primary"   onclick="submitPaste()">Save Formula</button>
       </div>
     </div>
-
   </div>
 </div>
 
-
-<!-- ═══════════════════════════════════════ SCRIPTS -->
 <!-- Supabase JS SDK (CDN) — must load before supabaseClient.js -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="static/js/supabaseClient.js"></script>
-<script src="static/js/engine.js"></script>
+<script src="static/js/engine.js?v=2"></script>
 
 <script>
-// ══════════════════════════════════════════════════════════
 //  FORMULA MANAGER  (all calls go through supabaseClient → Supabase)
-// ══════════════════════════════════════════════════════════
-
-let _fmData      = [];   // JSON formulas from server
+let _fmData      = [];   
 let _currentFile = null;
 let _feEditing   = false;
 let _uploadRaw   = null;
 
 /* ── Load formulas from Supabase ── */
 async function loadFmData() {
-  const { data, error } = await supabaseClient
-    .from("formulas")
-    .select("id, slug, name, tag, icon, description")
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Failed to load formulas:", error.message);
-    alert("❌ Could not load formulas: " + error.message);
-    _fmData = [];
-    return;
-  }
+  const { data, error } = await supabaseClient.from("formulas").select("id, slug, name, tag, icon, description").order("name", { ascending: true });
+  if (error) {console.error("Failed to load formulas:", error.message); alert("Could not load formulas: " + error.message); _fmData = []; return;}
   _fmData = data;
 }
 
@@ -237,25 +206,13 @@ function allFormulas() {
 }
 
 /* ── Refresh flat dropdown ── */
-async function refreshDropdown() {
-  await syncFormulaUI();
-}
+async function refreshDropdown() {await syncFormulaUI();}
 
-/* ── Single source of truth for refreshing BOTH the dropdown and the
-   Formula Library list after any create/update/delete. Previously
-   these were refreshed via two separate, unawaited loadFmData()
-   calls fired back-to-back — since network responses aren't
-   guaranteed to resolve in the order they were sent, a slightly
-   slower "first" request could overwrite a faster "second" one with
-   stale data, leaving the dropdown/list looking frozen until a full
-   page reload forced a clean fetch. This does exactly one fetch,
-   fully awaited, then updates both UI pieces from that one result. */
 async function syncFormulaUI() {
   await loadFmData();
   renderFmList();
-
   const sel = document.getElementById("formulaDropdown");
-  const prevValue = sel.value;   // preserve selection if it still exists
+  const prevValue = sel.value; 
   while (sel.options.length > 1) sel.remove(1);
   allFormulas().forEach(f => {
     const opt = document.createElement("option");
@@ -269,19 +226,9 @@ async function syncFormulaUI() {
 }
 
 /* ── FORMULA MANAGER MODAL ── */
-function openFormulaManager() {
-  loadFmData().then(() => {
-    renderFmList();
-    document.getElementById("fmOverlay").style.display = "flex";
-  });
-}
-function closeFormulaManager() {
-  document.getElementById("fmOverlay").style.display = "none";
-}
-function closeFmOverlay(e) {
-  if (e.target === document.getElementById("fmOverlay")) closeFormulaManager();
-}
-
+function openFormulaManager() {loadFmData().then(() => {renderFmList(); document.getElementById("fmOverlay").style.display = "flex";});}
+function closeFormulaManager() {document.getElementById("fmOverlay").style.display = "none";}
+function closeFmOverlay(e) {if (e.target === document.getElementById("fmOverlay")) closeFormulaManager();}
 function renderFmList() {
   const q        = (document.getElementById("fmSearch").value || "").toLowerCase();
   const el       = document.getElementById("fmList");
@@ -290,12 +237,7 @@ function renderFmList() {
     f.name.toLowerCase().includes(q) ||
     f.tag.toLowerCase().includes(q)
   );
-
-  if (!filtered.length) {
-    el.innerHTML = `<div class="bm-empty">No formulas found.</div>`;
-    return;
-  }
-
+  if (!filtered.length) {el.innerHTML = `<div class="bm-empty">No formulas found.</div>`; return;}
   el.innerHTML = filtered.map(f => {
     return `
     <div class="fm-card fm-clickable" onclick="openFormulaView('${f.slug}')">
@@ -306,57 +248,34 @@ function renderFmList() {
         <div class="fm-desc">${f.description}</div>
       </div>
       <div class="fm-actions" onclick="event.stopPropagation()">
-        <button class="icon-btn" onclick="event.stopPropagation();openFormulaView('${f.slug}')">👁 View</button>
-        <button class="icon-btn" onclick="event.stopPropagation();openFormulaEdit('${f.slug}')">✏ Edit</button>
-        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('${f.slug}','${f.name}')">🗑</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaView('${f.slug}')">View</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openFormulaEdit('${f.slug}')">Edit</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('${f.slug}','${f.name}')">Delete</button>
       </div>
     </div>`;
   }).join("");
 }
 
 /* ── FORMULA READ / EDIT MODAL ── */
-async function openFormulaView(slug) {
-  _currentFile = slug;   // holds the slug now — kept as _currentFile for now, renamed properly once Edit/Delete are migrated
-  _feEditing   = false;
-
-  const { data: row, error } = await supabaseClient
-    .from("formulas")
-    .select("formula_json")
-    .eq("slug", slug)
-    .single();
-
-  if (error) {
-    alert("❌ Could not load formula: " + error.message);
-    return;
-  }
-
+async function openFormulaView(slug) {_currentFile = slug; _feEditing   = false;
+  const { data: row, error } = await supabaseClient.from("formulas").select("formula_json").eq("slug", slug).single();
+  if (error) {alert("Could not load formula: " + error.message); return;}
   const data = row.formula_json;
   renderFeRead(data);
   document.getElementById("feTitle").textContent = data.icon + " " + data.name;
   document.getElementById("feReadMode").style.display  = "block";
   document.getElementById("feEditMode").style.display  = "none";
-  document.getElementById("feEditBtn").textContent     = "✏ Edit";
+  document.getElementById("feEditBtn").textContent     = "Edit";
   document.getElementById("feOverlay").style.display   = "flex";
 }
 
-async function openFormulaEdit(slug) {
-  await openFormulaView(slug);
-  toggleFeEdit();
-}
-
-function closeFeModal() {
-  document.getElementById("feOverlay").style.display = "none";
-  _currentFile = null;
-}
-function closeFeOverlay(e) {
-  if (e.target === document.getElementById("feOverlay")) closeFeModal();
-}
-
+async function openFormulaEdit(slug) {await openFormulaView(slug); toggleFeEdit();}
+function closeFeModal() {document.getElementById("feOverlay").style.display = "none"; _currentFile = null;}
+function closeFeOverlay(e) {if (e.target === document.getElementById("feOverlay")) closeFeModal();}
 function renderFeRead(data) {
   const defsHtml = (data.definitions||[]).map(d =>
     `<tr><td class="rd-sym">${d.symbol}</td><td>${d.label}</td></tr>`
   ).join("");
-
   const inputsHtml = (data.inputs||[]).map(inp => {
     const units = (inp.units||[]).map(u => u.label).join(", ");
     return `<tr>
@@ -366,7 +285,6 @@ function renderFeRead(data) {
       <td class="rd-units">${units}</td>
     </tr>`;
   }).join("");
-
   document.getElementById("feReadMode").innerHTML = `
     <div class="rd-section">
       <div class="rd-label">Formula</div>
@@ -374,10 +292,8 @@ function renderFeRead(data) {
     </div>
 
     ${data.description ? `<div class="rd-section"><div class="rd-label">Description</div><p class="rd-desc">${data.description}</p></div>` : ""}
-
     ${defsHtml ? `
-    <div class="rd-section">
-      <div class="rd-label">Definitions</div>
+    <div class="rd-section"><div class="rd-label">Definitions</div>
       <table class="rd-table"><tbody>${defsHtml}</tbody></table>
     </div>` : ""}
 
@@ -405,45 +321,36 @@ function toggleFeEdit() {
     document.getElementById("feEditArea").value = pre ? pre.textContent : "";
     document.getElementById("feReadMode").style.display = "none";
     document.getElementById("feEditMode").style.display = "block";
-    document.getElementById("feEditBtn").textContent    = "👁 View";
+    document.getElementById("feEditBtn").textContent    = "View";
   } else {
     document.getElementById("feReadMode").style.display = "block";
     document.getElementById("feEditMode").style.display = "none";
-    document.getElementById("feEditBtn").textContent    = "✏ Edit";
+    document.getElementById("feEditBtn").textContent    = "Edit";
   }
 }
-function cancelFeEdit() {
-  _feEditing = false;
+function cancelFeEdit() {_feEditing = false;
   document.getElementById("feReadMode").style.display = "block";
   document.getElementById("feEditMode").style.display = "none";
-  document.getElementById("feEditBtn").textContent    = "✏ Edit";
+  document.getElementById("feEditBtn").textContent    = "Edit";
 }
 
 async function saveFeEdit() {
   let data;
   try { data = JSON.parse(document.getElementById("feEditArea").value); }
-  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+  catch(e) { alert("Invalid JSON:\n" + e.message); return; }
 
   if (!data || !data.name) {
-    alert("❌ Error: 'name' field is required");
+    alert("Error: 'name' field is required");
     return;
   }
-
-  // Note: we update formula_json only, never the slug column itself.
-  // Editing a formula's name should not change its identity/URL —
-  // the autoslug trigger only fires when slug is null/empty, so an
-  // UPDATE that leaves slug untouched keeps it stable across edits.
-  const { error } = await supabaseClient
-    .from("formulas")
+  const { error } = await supabaseClient.from("formulas")
     .update({ formula_json: data })
     .eq("slug", _currentFile);
-
   if (error) {
-    alert("❌ Save failed: " + error.message);
+    alert("Save failed: " + error.message);
     return;
   }
-
-  alert("✅ Saved!");
+  alert("Saved!");
   cancelFeEdit();
   renderFeRead(data);
   await syncFormulaUI();
@@ -458,36 +365,18 @@ async function deleteCurrentFormula() {
   closeFeModal();
 }
 
-async function confirmDelete(slug, name) {
-  if (!confirm(`Delete "${name}"?\nThis cannot be undone.`)) return;
-  await doDelete(slug);
-}
-
+async function confirmDelete(slug, name) {if (!confirm(`Delete "${name}"?\nThis cannot be undone.`)) return; await doDelete(slug);}
 async function doDelete(slug) {
-  const { error } = await supabaseClient
-    .from("formulas")
-    .delete()
-    .eq("slug", slug);
-
-  if (error) {
-    alert("❌ Delete failed: " + error.message);
-    return;
-  }
-
+  const { error } = await supabaseClient.from("formulas").delete().eq("slug", slug);
+  if (error) {alert("Delete failed: " + error.message); return;}
+  alert("Deleted!");
   await syncFormulaUI();
 }
 
 /* ── CREATE / UPLOAD DIALOG ── */
-function openCreateDialog() {
-  document.getElementById("createOverlay").style.display = "flex";
-}
-function closeCreateDialog() {
-  document.getElementById("createOverlay").style.display = "none";
-}
-function closeCreateOverlay(e) {
-  if (e.target === document.getElementById("createOverlay")) closeCreateDialog();
-}
-
+function openCreateDialog() {document.getElementById("createOverlay").style.display = "flex";}
+function closeCreateDialog() {document.getElementById("createOverlay").style.display = "none";}
+function closeCreateOverlay(e) {if (e.target === document.getElementById("createOverlay")) closeCreateDialog();}
 function switchCtab(which) {
   ["upload","paste"].forEach(t => {
     document.getElementById(`ctab-${t}`).classList.toggle("active", t===which);
@@ -496,21 +385,13 @@ function switchCtab(which) {
 }
 
 /* FILE UPLOAD */
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById("uploadZone").classList.remove("drag");
-  const file = e.dataTransfer.files[0];
-  if (file) readUploadFile(file);
-}
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) readUploadFile(file);
-}
+function handleDrop(e) {e.preventDefault(); document.getElementById("uploadZone").classList.remove("drag"); const file = e.dataTransfer.files[0]; if (file) readUploadFile(file);}
+function handleFileSelect(e) {const file = e.target.files[0]; if (file) readUploadFile(file);}
 function readUploadFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
     _uploadRaw = ev.target.result;
-    document.getElementById("uploadFileName").textContent = "📄 " + file.name;
+    document.getElementById("uploadFileName").textContent = " " + file.name;
     document.getElementById("uploadPreviewText").textContent =
       _uploadRaw.length > 1500 ? _uploadRaw.slice(0,1500) + "\n…(truncated)" : _uploadRaw;
     document.getElementById("uploadZone").style.display    = "none";
@@ -529,7 +410,7 @@ async function submitUpload() {
   if (!_uploadRaw) return;
   let data;
   try { data = JSON.parse(_uploadRaw); }
-  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+  catch(e) { alert("Invalid JSON:\n" + e.message); return; }
   await doSaveFormula(data);
 }
 
@@ -538,32 +419,20 @@ async function submitPaste() {
   if (!raw) { alert("Paste some JSON first."); return; }
   let data;
   try { data = JSON.parse(raw); }
-  catch(e) { alert("❌ Invalid JSON:\n" + e.message); return; }
+  catch(e) { alert("Invalid JSON:\n" + e.message); return; }
   await doSaveFormula(data);
 }
 
 async function doSaveFormula(data) {
-  if (!data || !data.name) {
-    alert("❌ Error: 'name' field is required");
-    return;
-  }
-
-  // slug is intentionally omitted here — the DB trigger
-  // (formulas_autoslug) derives it from formula_json->>'name'
-  // and guarantees uniqueness (appending -2, -3, ... on
-  // collision), so we don't duplicate that logic client-side.
+  if (!data || !data.name) {alert("Error: 'name' field is required");return;}
   const { data: inserted, error } = await supabaseClient
     .from("formulas")
     .insert({ formula_json: data })
     .select("slug, name")
     .single();
 
-  if (error) {
-    alert("❌ Error: " + error.message);
-    return;
-  }
-
-  alert("✅ Formula saved: " + inserted.slug);
+  if (error) {alert("Error: " + error.message); return;}
+  alert("Formula saved: " + inserted.slug);
   closeCreateDialog();
   await syncFormulaUI();
   clearUpload();
@@ -585,15 +454,12 @@ function loadSampleJson() {
     });
 }
 
-function escHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+function escHtml(s) {return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-/* ── BOOT ── */
-document.addEventListener("DOMContentLoaded", () => {
-  refreshDropdown();
-});
+document.addEventListener("DOMContentLoaded", () => {refreshDropdown();});
 </script>
 
 </body>
 </html>
+
+

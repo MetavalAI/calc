@@ -1,15 +1,9 @@
-/**
- * METAVAL ENGINE — Pure JSON Formula Runner
- * Formulas live in Supabase (public.formulas.formula_json), fetched
- * directly via the Supabase JS SDK (supabaseClient, from supabaseClient.js).
- * No separate JS plugin system needed.
- */
 (function () {
   "use strict";
 
   let panelSeq  = 0;
-  const panelState = {};   // { plugin, unitSystem, fieldUnits }
-  const formulacache = {};  // { slug: formula_json }
+  const panelState = {};   
+  const formulacache = {};
 
   window.MetaEngine = { addPanel, removePanel, clearAll, setUnitSystem, openUnitEditor, closeUnitEditor, applyUnitEdits, recalc };
 
@@ -19,18 +13,17 @@
     const val = sel ? sel.value : "";
     if (!val) { alert("Please select a formula first."); return; }
 
+
     // val is the formula's slug (Supabase primary lookup key)
     const slug = val;
-
-    const cached = formulaCache[slug];
+    const cached = formulacache[slug];
     const fetcher = cached
     ? Promise.resolve({ data: { formula_json: cached }, error: null })
     : supabaseClient.from("formulas").select("formula_json").eq("slug", slug).single();
 
 fetcher.then(({ data, error }) => {
-  if (!error) formulaCache[slug] = data.formula_json;
+  if (!error) formulacache[slug] = data.formula_json;
         if (error) { alert("Could not load formula: " + error.message); return; }
-        
         // Clear existing panels before opening new one
       document.getElementById("panelsGrid").innerHTML = "";
       Object.keys(panelState).forEach(k => delete panelState[k]);
@@ -40,7 +33,6 @@ fetcher.then(({ data, error }) => {
         const unitSystem = "SI";
         const fieldUnits = buildDefaultFieldUnits(formula, unitSystem);
         panelState[id]   = { formula, unitSystem, fieldUnits };
-
         const grid  = document.getElementById("panelsGrid");
         const empty = document.getElementById("emptyState");
         grid.insertAdjacentHTML("afterbegin", buildPanelHTML(id, formula, unitSystem, fieldUnits));
@@ -49,10 +41,8 @@ fetcher.then(({ data, error }) => {
         updateGridCols();
         recalc(id);
       });
-
     if (sel) sel.value = "";
   }
-
   function removePanel(id) {
     const el = document.getElementById("panel-" + id);
     if (el) el.remove();
@@ -61,27 +51,21 @@ fetcher.then(({ data, error }) => {
     if (!document.querySelector(".calc-panel"))
       document.getElementById("emptyState").style.display = "flex";
   }
-
   function clearAll() {
     document.getElementById("panelsGrid").innerHTML = "";
     Object.keys(panelState).forEach(k => delete panelState[k]);
     panelSeq = 0;
     document.getElementById("emptyState").style.display = "flex";
   }
-
   function updateGridCols() {
-  // single panel only — no grid needed
   }
 
   /* ── Unit helpers ── */
   function evalUnit(unitObj) {
-    // toBase / fromBase stored as strings like "v => v * 1000"
-    // Convert to real functions
     if (typeof unitObj.toBase === "string")   unitObj.toBase   = new Function("v", `return (${unitObj.toBase})(v)`);
     if (typeof unitObj.fromBase === "string") unitObj.fromBase = new Function("v", `return (${unitObj.fromBase})(v)`);
     return unitObj;
   }
-
   function buildDefaultFieldUnits(formula, sysName) {
     const presets = (formula.unitSystems || {})[sysName] || {};
     const result  = {};
@@ -95,15 +79,8 @@ fetcher.then(({ data, error }) => {
 
   /* ── Panel HTML ── */
   function buildPanelHTML(id, f, unitSystem, fieldUnits) {
-    const defsHtml = (f.definitions || []).map(d =>
-      `<span><strong>${d.symbol}</strong> = ${d.label}</span>`
-    ).join("");
-
-    const inputsHtml = (f.inputs || []).map(inp =>
-      buildInputRow(id, inp, fieldUnits[inp.id])
-    ).join("");
-
-    return `
+    const defsHtml = (f.definitions || []).map(d =>`<span><strong>${d.symbol}</strong> = ${d.label}</span>`).join("");
+    const inputsHtml = (f.inputs || []).map(inp =>buildInputRow(id, inp, fieldUnits[inp.id])).join("");return `
 <div class="calc-panel" id="panel-${id}">
   <div class="panel-header">
     <div class="panel-title">
@@ -115,18 +92,15 @@ fetcher.then(({ data, error }) => {
       <button class="panel-close" onclick="MetaEngine.removePanel(${id})">✕</button>
     </div>
   </div>
-
   <div class="panel-formula-box">
     <div class="pf-label">Formula</div>
     <div class="pf-eq">${f.formula||""}</div>
     <div class="pf-defs">${defsHtml}</div>
   </div>
-
   <div class="panel-inputs">${inputsHtml}</div>
   <div class="derived-grid" id="derived-${id}" style="display:none"></div>
   <div class="panel-results" id="results-${id}"></div>
 </div>
-
 <!-- Unit Editor Modal -->
 <div class="unit-modal-overlay" id="modal-overlay-${id}" style="display:none"
      onclick="MetaEngine.closeUnitEditor(${id})">
@@ -147,18 +121,12 @@ fetcher.then(({ data, error }) => {
   }
 
   function buildInputRow(panelId, inp, activeUnit) {
-    const opts = inp.units.map(u =>
-      `<option value="${u.value}" ${u.value===activeUnit.value?"selected":""}>${u.label}</option>`
-    ).join("");
-
+    const opts = inp.units.map(u =>`<option value="${u.value}" ${u.value===activeUnit.value?"selected":""}>${u.label}</option>`).join("");
     const unitSel = inp.units.length > 1
       ? `<select id="pu-${panelId}-${inp.id}" class="unit-sel ${inp.dropdownOnly?"unit-sel-wide":""}"
            onchange="MetaEngine.recalc(${panelId})" data-field="${inp.id}">${opts}</select>`
       : `<select disabled class="unit-sel"><option>${inp.units[0].label}</option></select>`;
-
-    if (inp.dropdownOnly) {
-      return `<div class="pi-row"><label>${inp.label}</label><div class="pi-ctrl">${unitSel}</div></div>`;
-    }
+    if (inp.dropdownOnly) {return `<div class="pi-row"><label>${inp.label}</label><div class="pi-ctrl">${unitSel}</div></div>`;}
     return `
 <div class="pi-row">
   <label>${inp.label}</label>
@@ -190,14 +158,10 @@ fetcher.then(({ data, error }) => {
     if (!state) return;
     state.unitSystem  = sysName;
     state.fieldUnits  = buildDefaultFieldUnits(state.formula, sysName);
-
-    state.formula.inputs.forEach(inp => {
-      const s = document.getElementById(`pu-${panelId}-${inp.id}`);
+    state.formula.inputs.forEach(inp => {const s = document.getElementById(`pu-${panelId}-${inp.id}`);
       if (s) s.value = state.fieldUnits[inp.id].value;
     });
-    document.querySelectorAll(`#panel-${panelId} .sys-tab`).forEach(b =>
-      b.classList.toggle("active", b.dataset.sys === sysName)
-    );
+    document.querySelectorAll(`#panel-${panelId} .sys-tab`).forEach(b =>b.classList.toggle("active", b.dataset.sys === sysName));
     recalc(panelId);
   }
 
@@ -225,8 +189,7 @@ fetcher.then(({ data, error }) => {
         if (ps) ps.value = u.value;
       }
     });
-    closeUnitEditor(panelId);
-    recalc(panelId);
+    closeUnitEditor(panelId); recalc(panelId);
   }
 
   /* ── Recalculate ── */
@@ -234,20 +197,15 @@ fetcher.then(({ data, error }) => {
     const state = panelState[panelId];
     if (!state) return;
     const { formula, fieldUnits } = state;
-
     const values = {};
     formula.inputs.forEach(inp => {
       const numEl = document.getElementById(`pv-${panelId}-${inp.id}`);
       const selEl = document.getElementById(`pu-${panelId}-${inp.id}`);
 
-      if (selEl) {
-        const chosen = inp.units.find(u => u.value === selEl.value);
-        if (chosen) fieldUnits[inp.id] = evalUnit({...chosen});
-      }
+      if (selEl) {const chosen  = inp.units.find(u => u.value === selEl.value); if (chosen) fieldUnits[inp.id] = evalUnit({...chosen});}
       values[inp.id]            = parseFloat(numEl ? numEl.value : "0") || 0;
       values[inp.id + "_unit"]  = fieldUnits[inp.id];
     });
-
     let output = { results: [], derived: [] };
     try {
       const steps  = (formula.calculate || {}).steps || [];
@@ -256,7 +214,6 @@ fetcher.then(({ data, error }) => {
     } catch(e) {
       console.error("calculate error:", e);
     }
-
     renderResults(panelId, output);
   }
 
@@ -275,7 +232,6 @@ fetcher.then(({ data, error }) => {
       derivedEl.style.display = "none";
       derivedEl.innerHTML = "";
     }
-
     const resEl = document.getElementById(`results-${panelId}`);
     if (!output.results || !output.results.length) {
       resEl.innerHTML = `<div class="panel-result-empty">Enter valid values to see result</div>`;
@@ -292,5 +248,4 @@ fetcher.then(({ data, error }) => {
   </div>`).join("")}
 </div>`;
   }
-
 })();
